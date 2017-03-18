@@ -171,7 +171,32 @@ public class MybatisPlusConfig {
 	}
 }
 ---------------------end-----------------------
-    
-    
+
+
+   继承 BaseMapper类以后  单表的增删改查和分页查询不需要再手写sql只用掉他们的方法就可以
+    具体的使用方法可以到 http://mp.baomidou.com/#/      查看方法的具体使用
+  
+-----------------start-------------------
+--------------userMapper.Java
+package cn.rails.rsems.mapper
+
+import com.baomidou.mybatisplus.mapper.BaseMapper;
+import com.baomidou.mybatisplus.mapper.Wrapper;
+import cn.rails.rsems.model.User;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.session.RowBounds;
+
+import java.util.List;
+
+/**
+ * Created by tao on 12/3/17.
+ */
+
+public interface UserMapper extends BaseMapper<User> {
+
+   List<User> selectMyPage(RowBounds rowBounds, @Param("ew") Wrapper<User> wrapper, User user);
+   public   List<User> findUserInfo(User user);
+
+}
     
 
