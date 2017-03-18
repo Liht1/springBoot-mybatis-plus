@@ -1,4 +1,4 @@
-package com.cn.rails.rsems.config;
+package cn.rails.rsems.config;
 
 import com.baomidou.mybatisplus.MybatisConfiguration;
 import com.baomidou.mybatisplus.MybatisXMLLanguageDriver;
@@ -37,14 +37,14 @@ public class MybatisPlusConfig {
 
 	@Autowired(required = false)
 	private DatabaseIdProvider databaseIdProvider;
-	
+
 	/**
 	 *	 mybatis-plus分页插件
 	 */
 	@Bean
 	public PaginationInterceptor paginationInterceptor() {
 		PaginationInterceptor page = new PaginationInterceptor();
-		page.setDialectType("mysql");
+		page.setDialectType("oracle");
 		return page;
 	}
 	/**
@@ -66,7 +66,7 @@ public class MybatisPlusConfig {
 		}
 		// MP 全局配置，更多内容进入类看注释
 		GlobalConfiguration globalConfig = new GlobalConfiguration();
-		globalConfig.setDbType(DBType.MYSQL.name());
+		globalConfig.setDbType(DBType.ORACLE.name());
 		// ID 策略 AUTO->`0`("数据库ID自增") INPUT->`1`(用户输入ID") ID_WORKER->`2`("全局唯一ID") UUID->`3`("全局唯一ID")
 		globalConfig.setIdType(2);
 		mybatisPlus.setGlobalConfig(globalConfig);

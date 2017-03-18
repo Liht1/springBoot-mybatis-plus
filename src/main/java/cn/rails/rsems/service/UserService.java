@@ -9,6 +9,6 @@ import java.util.List;
  */
 public  interface UserService {
     Object selectUser(Integer page, Integer size);
-
+     public void insertUser();
     List<User> findUserInfo();
 }

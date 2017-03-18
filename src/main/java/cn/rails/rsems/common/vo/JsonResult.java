@@ -1,6 +1,7 @@
 package cn.rails.rsems.common.vo;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import org.apache.log4j.Logger;
 
 import java.io.Serializable;
 
@@ -24,7 +25,7 @@ public class JsonResult<T> implements Serializable {
 
     @JsonView(NormalView.class)
     private String secure;//安全数据
-    
+
     @JsonView(ErrorView.class)
     private String code;//返回给调用者的错误码（如：100001）
 
@@ -39,21 +40,21 @@ public class JsonResult<T> implements Serializable {
         this.data = data;
         this.code = code;
     }
-	
+
     public JsonResult(T data, Boolean success, String message) {
         // TODO Auto-generated constructor stub
         this.data = data;
         this.success = success;
         this.message = message;
     }
-    
+
     public JsonResult(T data, String code, String message) {
         // TODO Auto-generated constructor stub
         this.data = data;
         this.code = code;
         this.message = message;
     }
-    
+
     public JsonResult(T data, Boolean success, String message, String code) {
         // TODO Auto-generated constructor stub
         this.data = data;
@@ -98,7 +99,7 @@ public class JsonResult<T> implements Serializable {
     public void setSecure(String secure) {
         this.secure = secure;
     }
-    
+
     public String getCode() {
 		return code;
 	}
@@ -106,5 +107,5 @@ public class JsonResult<T> implements Serializable {
 	public void setCode(String code) {
 		this.code = code;
 	}
-	
+
 }
