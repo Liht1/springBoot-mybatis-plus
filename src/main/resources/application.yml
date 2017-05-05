@@ -1,8 +1,8 @@
 server:
-  port: 8081
+  port: 8082
   context-path: /RSEMSServer
 
-#自己配置日志log4j配置文件
+#
 #  logging:
 #  config: classpath:log4j2.xml
 
@@ -10,7 +10,7 @@ server:
 # jdbc_config
 spring:
   datasource:
-     #url: jdbc:mysql://localhost:3306/mysql?useUnicode=true&characterEncoding=gbk&zeroDateTimeBehavior=convertToNull
+    #url: jdbc:mysql://localhost:3306/mysql?useUnicode=true&characterEncoding=gbk&zeroDateTimeBehavior=convertToNull
     url: jdbc:oracle:thin:@localhost:1521:orcl
     username: LHT
     password: LHT
@@ -35,15 +35,34 @@ spring:
     filters: stat,wall,log4j
     # 通过connectProperties属性来打开mergeSql功能；慢SQL记录
     connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+
     # 合并多个DruidDataSource的监控数据
     #spring.datasource.useGlobalDataSourceStat=true
 
-# mybatis_config 
+# mybatis_config
 mybatis:
     mapper-locations: classpath*:mapper/**/*.xml
     typeAliasesPackage: cn.rails.rsems.model
-
-#springboot自带的日志logback
 logging:
   path: C:\Users\macAdministrator\Desktop\
   file: log.log
+
+
+#======
+myProps: #自定义的属性和值
+  listProp1:
+#  simpleProp: simplePropValue
+#  arrayProps: 1,2,3,4,5
+
+    - name: abc
+      value: abcValue
+    - name: efg
+      value: efgValue
+  userUrl:
+    - /user/test
+    - /pown
+#notUrl:
+
+#  mapProps:
+#    key1: value1
+#    key2: value2

@@ -1,698 +1,1153 @@
 /*----------------------------------------------------------------
-// 功能描述：设备台账表
-// 创建标识：郭洋 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
-
-CREATE TABLE T_EQUIPMENT
-(
-  GUID                VARCHAR2(32) DEFAULT SYS_GUID() NOT NULL,
-  EQUIPCATEGORYID     VARCHAR2(32),
-  POSITIONID          VARCHAR2(32),
-  NAME                VARCHAR2(40),
-  CODE                VARCHAR2(30),
-  QRCODE              VARCHAR2(50),
-  SERVICESTATE        NUMBER,
-  STATE               NUMBER,
-  LEVELS              NUMBER,
-  PRICE               NUMBER,
-  ASSETSCOMPANYCODE   VARCHAR2(30),
-  MAINTAINCOMPANYCODE VARCHAR2(30),
-  MANUFACTCOMPANYCODE VARCHAR2(30),
-  PURCHASETIME        DATE DEFAULT SYSDATE,
-  RUNNINGTIME         DATE DEFAULT SYSDATE,
-  INSTALLTIME         DATE DEFAULT SYSDATE,
-  MATERIALCODE        VARCHAR2(60),
-  FIXEDCODE           VARCHAR2(60),
-  WARRANTYSTARTTIME   DATE,
-  WARRANTYENDTIME     DATE,
-  COMMENTS            VARCHAR2(100)
-);
-
-COMMENT ON TABLE T_EQUIPMENT IS '设备资产表';
-COMMENT ON COLUMN T_EQUIPMENT.EQUIPCATEGORYID IS '分类GUID';
-COMMENT ON COLUMN T_EQUIPMENT.POSITIONID IS '位置GUID';
-COMMENT ON COLUMN T_EQUIPMENT.NAME IS '设备名称';
-COMMENT ON COLUMN T_EQUIPMENT.CODE IS '设备编码';
-COMMENT ON COLUMN T_EQUIPMENT.QRCODE IS '设备二维码';
-COMMENT ON COLUMN T_EQUIPMENT.SERVICESTATE IS '服务状态：1启用，0未启用，2待测试，3报废';
-COMMENT ON COLUMN T_EQUIPMENT.STATE IS '状态，1包内，0保外';
-COMMENT ON COLUMN T_EQUIPMENT.LEVELS IS '1一级，2二级，3三级';
-COMMENT ON COLUMN T_EQUIPMENT.PRICE IS '设备价格';
-COMMENT ON COLUMN T_EQUIPMENT.ASSETSCOMPANYCODE IS '企业字典资产单位';
-COMMENT ON COLUMN T_EQUIPMENT.MAINTAINCOMPANYCODE IS '企业字典运维单位';
-COMMENT ON COLUMN T_EQUIPMENT.MANUFACTCOMPANYCODE IS '企业字典制造单位';
-COMMENT ON COLUMN T_EQUIPMENT.PURCHASETIME IS '采购日期';
-COMMENT ON COLUMN T_EQUIPMENT.RUNNINGTIME IS '运行日期';
-COMMENT ON COLUMN T_EQUIPMENT.INSTALLTIME IS '安装日期';
-COMMENT ON COLUMN T_EQUIPMENT.MATERIALCODE IS '物资';
-COMMENT ON COLUMN T_EQUIPMENT.FIXEDCODE IS '固资';
-COMMENT ON COLUMN T_EQUIPMENT.PARENTID IS '父级编码';
-COMMENT ON COLUMN T_EQUIPMENT.WARRANTYSTARTTIME IS '质保开始时间';
-COMMENT ON COLUMN T_EQUIPMENT.WARRANTYENDTIME IS '质保结束时间';
-COMMENT ON COLUMN T_EQUIPMENT.COMMENTS IS '备注';
-
-
-ALTER TABLE T_EQUIPMENT ADD CONSTRAINT EQUIPMENT_ID_PRIMARY PRIMARY KEY (GUID);
-ALTER TABLE T_EQUIPMENT ADD CONSTRAINT EQUIP_CODE_UNIQUE UNIQUE (CODE);
-
-/*----------------------------------------------------------------
 // 功能描述：设备分类表
 // 创建标识：董立华 2017-03-13
 // 修改标识：
 // 修改描述：
 //----------------------------------------------------------------*/
-CREATE TABLE D_EQUIPCATEGORY
+-- Create table
+create table D_EQUIPCATEGORY
 (
-  GUID        VARCHAR2(32) DEFAULT SYS_GUID() NOT NULL,
-  CODE        VARCHAR2(30),
-  NAME        VARCHAR2(40),
-  BREVITYCODE VARCHAR2(30),
-  PARENTID    VARCHAR2(32),
-  CREATETIME  DATE,
-  SORT        NUMBER
+  code            VARCHAR2(30) not null,
+  name            VARCHAR2(40) not null,
+  shortcode       VARCHAR2(30),
+  parentcode      VARCHAR2(30),
+  allparentcode   VARCHAR2(200),
+  islastlevel     VARCHAR2(1) default 1 not null,
+  measurementunit VARCHAR2(10),
+  fixedassetstype VARCHAR2(30),
+  availabledate   VARCHAR2(8),
+  disabledate     VARCHAR2(8),
+  sort            NUMBER,
+  stopflag        VARCHAR2(1) default 0 not null,
+  remark          VARCHAR2(200)
 );
 
-COMMENT ON TABLE D_EQUIPCATEGORY IS '设备分类表';
-COMMENT ON COLUMN D_EQUIPCATEGORY.CODE IS '分类编码';
-COMMENT ON COLUMN D_EQUIPCATEGORY.NAME IS '分类名称';
-COMMENT ON COLUMN D_EQUIPCATEGORY.BREVITYCODE IS '分类简码';
-COMMENT ON COLUMN D_EQUIPCATEGORY.PARENTID IS '父级编码';
-COMMENT ON COLUMN D_EQUIPCATEGORY.CREATETIME IS '创建时间';
-COMMENT ON COLUMN D_EQUIPCATEGORY.SORT IS '排序';
+-- Add comments to the table
+comment on table D_EQUIPCATEGORY
+  is '设备分类';
+-- Add comments to the columns
+comment on column D_EQUIPCATEGORY.code
+  is '设备分类编码规则';
+comment on column D_EQUIPCATEGORY.name
+  is '分类名称';
+comment on column D_EQUIPCATEGORY.shortcode
+  is '分类简码，录入，拼音简称';
+comment on column D_EQUIPCATEGORY.parentcode
+  is '父级编码';
+comment on column D_EQUIPCATEGORY.allparentcode
+  is '父级路径，所有父级用“|”隔开';
+comment on column D_EQUIPCATEGORY.islastlevel
+  is '是否末级，0|否、1|是 ；（默认1）    ';
+comment on column D_EQUIPCATEGORY.measurementunit
+  is '计量单位';
+comment on column D_EQUIPCATEGORY.fixedassetstype
+  is '对应固资分类';
+comment on column D_EQUIPCATEGORY.availabledate
+  is '生效日期YYYYMMdd';
+comment on column D_EQUIPCATEGORY.disabledate
+  is '停用日期YYYYMMdd';
+comment on column D_EQUIPCATEGORY.sort
+  is '排序码';
+comment on column D_EQUIPCATEGORY.stopflag
+  is '是否停用，0|启用、1|停用 ；（默认0） ';
+comment on column D_EQUIPCATEGORY.remark
+  is '备注';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table D_EQUIPCATEGORY
+  add constraint PK_D_EQUIPCATEGORY primary key (CODE)
 
-ALTER TABLE D_EQUIPCATEGORY ADD CONSTRAINT CATEGORY_CODE_PRIMARY PRIMARY KEY (GUID);
-ALTER TABLE D_EQUIPCATEGORY ADD CONSTRAINT CATEGORY_CODE_UNIQUE UNIQUE (CODE);
+/*----------------------------------------------------------------
+// 功能描述：设备型号表
+// 创建标识：董立华 2017-03-13
+// 修改标识：
+// 修改描述：
+//----------------------------------------------------------------*/
+-- Create table
+create table D_EQUIPMODEL
+(
+  code              VARCHAR2(30) not null,
+  equipcategorycode VARCHAR2(30) not null,
+  suppliercode      VARCHAR2(30),
+  contactpersonid   VARCHAR2(32),
+  name              VARCHAR2(40) not null,
+  warrantyterm      VARCHAR2(10),
+  uselife           NUMBER,
+  powerconsumption  NUMBER,
+  certificateno     VARCHAR2(100),
+  parameter         VARCHAR2(100),
+  principle         VARCHAR2(100),
+  remark            VARCHAR2(200)
+);
+
+-- Add comments to the table
+comment on table D_EQUIPMODEL
+  is '设备规格型号';
+-- Add comments to the columns
+comment on column D_EQUIPMODEL.code
+  is '规格型号编码';
+comment on column D_EQUIPMODEL.equipcategorycode
+  is '设备分类编码';
+comment on column D_EQUIPMODEL.suppliercode
+  is '供应商编码';
+comment on column D_EQUIPMODEL.contactpersonid
+  is '供应商联系人';
+comment on column D_EQUIPMODEL.name
+  is '规格型号名称';
+comment on column D_EQUIPMODEL.warrantyterm
+  is '质保年限';
+comment on column D_EQUIPMODEL.uselife
+  is '使用年限';
+comment on column D_EQUIPMODEL.powerconsumption
+  is '功耗';
+comment on column D_EQUIPMODEL.certificateno
+  is '技术证书号';
+comment on column D_EQUIPMODEL.parameter
+  is '技术参数';
+comment on column D_EQUIPMODEL.principle
+  is '工作原理';
+comment on column D_EQUIPMODEL.remark
+  is '备注说明';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table D_EQUIPMODEL
+  add constraint PK_D_EQUIPMODEL primary key (CODE)
+
+/*----------------------------------------------------------------
+// 功能描述：规格型号扩展默认值
+// 创建标识：董立华 2017-03-13
+// 修改标识：
+// 修改描述：
+//----------------------------------------------------------------*/
+-- Create table
+create table D_EQUIPMODELDEFAULTVALUE
+(
+  guid                   VARCHAR2(32) not null,
+  modelcode              VARCHAR2(30) not null,
+  extattributecode       VARCHAR2(30) not null,
+  extattributeoptioncode VARCHAR2(30),
+  remark                 VARCHAR2(200)
+);
+
+-- Add comments to the table
+comment on table D_EQUIPMODELDEFAULTVALUE
+  is '规格型号扩展默认值';
+-- Add comments to the columns
+comment on column D_EQUIPMODELDEFAULTVALUE.modelcode
+  is '规格型号表';
+comment on column D_EQUIPMODELDEFAULTVALUE.extattributecode
+  is '分类扩展属性表';
+comment on column D_EQUIPMODELDEFAULTVALUE.extattributeoptioncode
+  is '属性代码表';
+comment on column D_EQUIPMODELDEFAULTVALUE.remark
+  is '备注';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table D_EQUIPMODELDEFAULTVALUE
+  add constraint PK_D_EQUIPMODELDEFAULTVALUE primary key (GUID)
+
+/*----------------------------------------------------------------
+// 功能描述：作用用途表
+// 创建标识：董立华 2017-03-13
+// 修改标识：
+// 修改描述：
+//----------------------------------------------------------------*/
+-- Create table
+create table D_EQUIPPURPOSE
+(
+  code          VARCHAR2(30) not null,
+  name          VARCHAR2(40) not null,
+  parentcode    VARCHAR2(30),
+  allparentcode VARCHAR2(200),
+  islastlevel   VARCHAR2(1) default 1 not null,
+  availabledate VARCHAR2(8),
+  disabledate   VARCHAR2(8),
+  sort          NUMBER,
+  stopflag      VARCHAR2(1) default 0 not null,
+  remark        VARCHAR2(200)
+);
+
+-- Add comments to the table
+comment on table D_EQUIPPURPOSE
+  is '作用用途';
+-- Add comments to the columns
+comment on column D_EQUIPPURPOSE.code
+  is '用途编码';
+comment on column D_EQUIPPURPOSE.name
+  is '用途名称';
+comment on column D_EQUIPPURPOSE.parentcode
+  is '父级编码';
+comment on column D_EQUIPPURPOSE.allparentcode
+  is '父级路径，所有父级用“|”隔开';
+comment on column D_EQUIPPURPOSE.islastlevel
+  is '是否末级，0|否、1|是 ；（默认1）';
+comment on column D_EQUIPPURPOSE.availabledate
+  is '生效日期YYYYMMdd';
+comment on column D_EQUIPPURPOSE.disabledate
+  is '停用日期YYYYMMdd';
+comment on column D_EQUIPPURPOSE.sort
+  is '排序码';
+comment on column D_EQUIPPURPOSE.stopflag
+  is '是否停用，0|启用、1|停用 ；（默认0）  ';
+comment on column D_EQUIPPURPOSE.remark
+  is '备注';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table D_EQUIPPURPOSE
+  add constraint PK_D_EQUIPPURPOSE primary key (CODE)
+
+/*----------------------------------------------------------------
+// 功能描述：设备分类扩展属性表
+// 创建标识：董立华 2017-03-13
+// 修改标识：
+// 修改描述：
+//----------------------------------------------------------------*/
+-- Create table
+create table D_EXTATTRIBUTE
+(
+  code              VARCHAR2(30) not null,
+  equipcategorycode VARCHAR2(30) not null,
+  name              VARCHAR2(40) not null,
+  type              VARCHAR2(30) not null,
+  required          VARCHAR2(1),
+  measurementunit   VARCHAR2(10),
+  sort              NUMBER,
+  stopflag          VARCHAR2(1) default 0 not null,
+  remark            VARCHAR2(200)
+);
+
+-- Add comments to the table
+comment on table D_EXTATTRIBUTE
+  is '设备分类扩展属性表';
+-- Add comments to the columns
+comment on column D_EXTATTRIBUTE.code
+  is '扩展属性编码';
+comment on column D_EXTATTRIBUTE.equipcategorycode
+  is '设备分类编码，可以在非末级分类上设置扩展属性;设备带出扩展属性时，需要考虑所有分类的扩展属性集合';
+comment on column D_EXTATTRIBUTE.name
+  is '属性名称';
+comment on column D_EXTATTRIBUTE.type
+  is '属性类型，文本，数字，金额，日期，引用（码表）';
+comment on column D_EXTATTRIBUTE.required
+  is '是否必填，0|否、1|是';
+comment on column D_EXTATTRIBUTE.measurementunit
+  is '计量单位，字符型';
+comment on column D_EXTATTRIBUTE.sort
+  is '排序码';
+comment on column D_EXTATTRIBUTE.stopflag
+  is '是否停用，0|启用、1|停用；（默认0） ';
+comment on column D_EXTATTRIBUTE.remark
+  is '备注';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table D_EXTATTRIBUTE
+  add constraint PK_D_EXTATTRIBUTE primary key (CODE)
+
+/*----------------------------------------------------------------
+// 功能描述：扩展属性选项表
+// 创建标识：董立华 2017-03-13
+// 修改标识：
+// 修改描述：
+//----------------------------------------------------------------*/
+-- Create table
+create table D_EXTATTRIBUTEOPTIONS
+(
+  code             VARCHAR2(30) not null,
+  extattributecode VARCHAR2(30) not null,
+  name             VARCHAR2(100),
+  remark           VARCHAR2(200)
+);
+
+-- Add comments to the table
+comment on table D_EXTATTRIBUTEOPTIONS
+  is '扩展属性选项表';
+-- Add comments to the columns
+comment on column D_EXTATTRIBUTEOPTIONS.code
+  is '选项编码';
+comment on column D_EXTATTRIBUTEOPTIONS.extattributecode
+  is '设备分类扩展属性代码';
+comment on column D_EXTATTRIBUTEOPTIONS.name
+  is '选项名称';
+comment on column D_EXTATTRIBUTEOPTIONS.remark
+  is '备注';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table D_EXTATTRIBUTEOPTIONS
+  add constraint PK_D_EXTATTRIBUTEOPTIONS primary key (CODE)
+
 /*----------------------------------------------------------------
 // 功能描述：设备位置表
 // 创建标识：董立华 2017-03-13
 // 修改标识：
 // 修改描述：
 //----------------------------------------------------------------*/
-CREATE TABLE D_POSITION
+-- Create table
+create table D_LOCATION
 (
-  GUID                VARCHAR2(32) DEFAULT SYS_GUID() NOT NULL,
-  CODE                VARCHAR2(30),
-  NAME                VARCHAR2(40),
-  BREVITYCODE         VARCHAR2(30),
-  PARENTID            VARCHAR2(32),
-  CREATETIME 		  DATE,
-  SORT        		  NUMBER
+  code          VARCHAR2(30) not null,
+  type          VARCHAR2(30) not null,
+  stationcode   VARCHAR2(3) not null,
+  name          VARCHAR2(40) not null,
+  shortcode     VARCHAR2(30),
+  qrcode        VARCHAR2(50),
+  warehouseflag VARCHAR2(1),
+  parentcode    VARCHAR2(30),
+  allparentcode VARCHAR2(200),
+  islastlevel   VARCHAR2(1) not null,
+  gps           VARCHAR2(100),
+  availabledate VARCHAR2(8),
+  disabledate   VARCHAR2(8),
+  sort          NUMBER,
+  stopflag      VARCHAR2(1) default 0 not null,
+  remark        VARCHAR2(200)
 );
 
-COMMENT ON TABLE D_POSITION IS '设备位置表';
-COMMENT ON COLUMN D_POSITION.CODE IS '位置编码';
-COMMENT ON COLUMN D_POSITION.NAME IS '位置名称';
-COMMENT ON COLUMN D_POSITION.BREVITYCODE IS '位置简码';
-COMMENT ON COLUMN D_POSITION.PARENTID IS '父级编码';
-COMMENT ON COLUMN D_POSITION.CREATETIME IS '创建时间';
-COMMENT ON COLUMN D_POSITION.SORT IS '排序';
-
-
-ALTER TABLE D_POSITION ADD CONSTRAINT POSITION_ID_PRIMARY PRIMARY KEY (GUID);
-ALTER TABLE D_POSITION ADD CONSTRAINT POSITION_CODE_UNIQUE UNIQUE (CODE);
+-- Add comments to the table
+comment on table D_LOCATION
+  is '设备位置表';
+-- Add comments to the columns
+comment on column D_LOCATION.code
+  is '设备位置编码规则';
+comment on column D_LOCATION.type
+  is '位置类型代码表：机房类、等';
+comment on column D_LOCATION.stationcode
+  is '车站字典';
+comment on column D_LOCATION.name
+  is '录入，文本格式';
+comment on column D_LOCATION.shortcode
+  is '录入，拼音简码';
+comment on column D_LOCATION.qrcode
+  is '位置二维码';
+comment on column D_LOCATION.warehouseflag
+  is '仓库标识';
+comment on column D_LOCATION.parentcode
+  is '父级编码';
+comment on column D_LOCATION.allparentcode
+  is '父级路径，所有父级用“|”隔开';
+comment on column D_LOCATION.islastlevel
+  is '0|否、1|是 （默认1）';
+comment on column D_LOCATION.gps
+  is '经度、维度、楼层';
+comment on column D_LOCATION.availabledate
+  is '生效日期YYYYMMdd';
+comment on column D_LOCATION.disabledate
+  is '停用日期YYYYMMdd';
+comment on column D_LOCATION.sort
+  is '排序码';
+comment on column D_LOCATION.stopflag
+  is '0|启用、1|停用；（默认0） ';
+comment on column D_LOCATION.remark
+  is '备注';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table D_LOCATION
+  add constraint PK_D_LOCATION primary key (CODE)
 
 /*----------------------------------------------------------------
-// 功能描述：核心件表
+// 功能描述：位置类型表
 // 创建标识：董立华 2017-03-13
 // 修改标识：
 // 修改描述：
 //----------------------------------------------------------------*/
-
-CREATE TABLE T_COREPART
+-- Create table
+create table D_LOCATIONTYPE
 (
-  GUID                VARCHAR2(32) DEFAULT SYS_GUID() NOT NULL,
-  EQUIPID             VARCHAR2(32),
-  NAME                VARCHAR2(40),
-  CODE                VARCHAR2(30),
-  SERIALNUMBER        VARCHAR2(30),
-  PRICE               NUMBER,
-  MODEL               VARCHAR2(40),
-  CATEGORY            VARCHAR2(30),
-  STATE               NUMBER
+  code     VARCHAR2(30) not null,
+  name     VARCHAR2(40) not null,
+  sort     NUMBER,
+  stopflag VARCHAR2(1) not null
 );
 
-COMMENT ON TABLE T_COREPART IS '核心件表';
-COMMENT ON COLUMN T_COREPART.EQUIPID IS '设备GUID';
-COMMENT ON COLUMN T_COREPART.NAME IS '核心件名称';
-COMMENT ON COLUMN T_COREPART.CODE IS '核心件编码';
-COMMENT ON COLUMN T_COREPART.SERIALNUMBER IS '序列号SN';
-COMMENT ON COLUMN T_COREPART.PRICE IS '单价';
-COMMENT ON COLUMN T_COREPART.MODEL IS '型号';
-COMMENT ON COLUMN T_COREPART.CATEGORY IS '分类';
-COMMENT ON COLUMN T_COREPART.STATE IS '状态';
-
-ALTER TABLE T_COREPART ADD CONSTRAINT COREPART_ID_PRIMARY PRIMARY KEY (GUID);
-ALTER TABLE T_COREPART ADD CONSTRAINT COREPART_CODE_UNIQUE UNIQUE (CODE);
-
-/*----------------------------------------------------------------
-// 功能描述：扩展属性（定义）表
-// 创建标识：董立华 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
-CREATE TABLE D_EXTEDATTRIBUTE_CONF
-(
-  GUID                VARCHAR2(32) DEFAULT SYS_GUID() NOT NULL,
-  CATEGORYID          VARCHAR2(32),
-  ATTRIBUTENAME       VARCHAR2(30),
-  ATTRIBUTETYPE       VARCHAR2(30)
-);
-
-COMMENT ON TABLE D_EXTEDATTRIBUTE_CONF IS '扩展属性(定义)';
-COMMENT ON COLUMN D_EXTEDATTRIBUTE_CONF.CATEGORYID IS '分类ID';
-COMMENT ON COLUMN D_EXTEDATTRIBUTE_CONF.ATTRIBUTENAME IS '属性名称';
-COMMENT ON COLUMN D_EXTEDATTRIBUTE_CONF.ATTRIBUTETYPE IS '属性类型';
-
-ALTER TABLE D_EXTEDATTRIBUTE_CONF ADD CONSTRAINT EXTEDATTRIBUTE_CONF_ID_PRIMARY PRIMARY KEY (GUID);
-
-/*----------------------------------------------------------------
-// 功能描述：扩展属性（值）表
-// 创建标识：董立华 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
-CREATE TABLE T_EXTEDATTRIBUTE
-(
-  GUID                VARCHAR2(32) DEFAULT SYS_GUID() NOT NULL,
-  ATTRIBUTEID         VARCHAR2(32),
-  EQUIPID             VARCHAR2(32),
-  ATTRIBUTEVALUE      VARCHAR2(30),
-  COMMENTS            VARCHAR2(100)
-);
-
-COMMENT ON TABLE T_EXTEDATTRIBUTE IS '扩展属性(定义)';
-COMMENT ON COLUMN T_EXTEDATTRIBUTE.ATTRIBUTEID IS '设备ID';
-COMMENT ON COLUMN T_EXTEDATTRIBUTE.EQUIPID IS '设备ID';
-COMMENT ON COLUMN T_EXTEDATTRIBUTE.ATTRIBUTEVALUE IS '属性值';
-COMMENT ON COLUMN T_EXTEDATTRIBUTE.COMMENTS IS '备注';
-
-
-ALTER TABLE T_EXTEDATTRIBUTE ADD CONSTRAINT EXTEDATTRIBUTE_ID_PRIMARY PRIMARY KEY (GUID);
+-- Add comments to the table
+comment on table D_LOCATIONTYPE
+  is '位置类型表';
+-- Add comments to the columns
+comment on column D_LOCATIONTYPE.code
+  is '设备位置编码规则';
+comment on column D_LOCATIONTYPE.name
+  is '类型名称';
+comment on column D_LOCATIONTYPE.sort
+  is '排序码';
+comment on column D_LOCATIONTYPE.stopflag
+  is '0|启用、1|停用；（默认0）';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table D_LOCATIONTYPE
+  add constraint PK_D_LOCATIONTYPE primary key (CODE)
 /*----------------------------------------------------------------
 // 功能描述：设备变更记录表
-// 创建标识：董立华 2017-03-14
+// 创建标识：董立华 2017-03-13
 // 修改标识：
 // 修改描述：
 //----------------------------------------------------------------*/
-CREATE TABLE T_EQUIPCHANGERECORD
+-- Create table
+create table T_EQUIPCHANGELOG
 (
-  GUID                VARCHAR2(32) DEFAULT SYS_GUID() NOT NULL,
-  EQUIPID             VARCHAR2(32),
-  ATTRIBUTENAME       VARCHAR2(30),
-  OLDVALUE            VARCHAR2(30),
-  NEWVALUE            VARCHAR2(30),
-  CHANGETIME          DATE,
-  CREATER             VARCHAR2(30)
+  guid        VARCHAR2(32) not null,
+  equipid     VARCHAR2(32) not null,
+  description VARCHAR2(200),
+  userid      VARCHAR2(32) not null,
+  changetime  DATE not null,
+  remark      VARCHAR2(200)
 );
 
-COMMENT ON TABLE T_EQUIPCHANGERECORD IS '设备变更记录表';
-COMMENT ON COLUMN T_EQUIPCHANGERECORD.EQUIPID IS '设备GUID';
-COMMENT ON COLUMN T_EQUIPCHANGERECORD.ATTRIBUTENAME IS '属性名称';
-COMMENT ON COLUMN T_EQUIPCHANGERECORD.OLDVALUE IS '旧值';
-COMMENT ON COLUMN T_EQUIPCHANGERECORD.NEWVALUE IS '新值';
-COMMENT ON COLUMN T_EQUIPCHANGERECORD.CHANGETIME IS '变更时间';
-COMMENT ON COLUMN T_EQUIPCHANGERECORD.CREATER IS '操作人';
+-- Add comments to the table
+comment on table T_EQUIPCHANGELOG
+  is '设备变更记录表';
+-- Add comments to the columns
+comment on column T_EQUIPCHANGELOG.guid
+  is '变更记录ID';
+comment on column T_EQUIPCHANGELOG.equipid
+  is '设备ID';
+comment on column T_EQUIPCHANGELOG.description
+  is '设备变更描述';
+comment on column T_EQUIPCHANGELOG.userid
+  is '设备变更人';
+comment on column T_EQUIPCHANGELOG.changetime
+  is '设备变更时间';
+comment on column T_EQUIPCHANGELOG.remark
+  is '备注';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table T_EQUIPCHANGELOG
+  add constraint PK_T_EQUIPCHANGELOG primary key (GUID)
 
+/*----------------------------------------------------------------
+// 功能描述：设备台账表
+// 创建标识：董立华 2017-03-13
+// 修改标识：
+// 修改描述：
+//---------------------------------------------------------------*/
+-- Create table
+create table T_EQUIPMENT
+(
+  guid                 VARCHAR2(32) not null,
+  code                 VARCHAR2(30) not null,
+  locationcode         VARCHAR2(30) not null,
+  equipcategorycode    VARCHAR2(30) not null,
+  equippurposecode     VARCHAR2(30),
+  stationcode          VARCHAR2(3) not null,
+  qrcode               VARCHAR2(50),
+  sn                   VARCHAR2(50) not null,
+  name                 VARCHAR2(40) not null,
+  parentcode           VARCHAR2(30),
+  allparentcode        VARCHAR2(200),
+  islastlevel          VARCHAR2(1) default 1 not null,
+  state                VARCHAR2(1) not null,
+  iscore               VARCHAR2(1),
+  measurementunit      VARCHAR2(10),
+  price                NUMBER,
+  ipaddress            VARCHAR2(30),
+  upsequipcode         VARCHAR2(30),
+  gps                  VARCHAR2(100),
+  assetscompanycode    VARCHAR2(30) not null,
+  maintaincompanycode  VARCHAR2(30),
+  operationcompanycode VARCHAR2(30),
+  keeperid             VARCHAR2(32),
+  entrustedcompanycode VARCHAR2(30),
+  purchasedate         VARCHAR2(8),
+  installdate          VARCHAR2(8),
+  runningdate          VARCHAR2(8) not null,
+  modelcode            VARCHAR2(30),
+  suppliercode         VARCHAR2(30),
+  contactpersonid      VARCHAR2(32),
+  uselife              VARCHAR2(40),
+  warrantyterm         VARCHAR2(8),
+  warrantystate        VARCHAR2(1) default 0 not null,
+  powerconsumption     NUMBER,
+  certificateno        VARCHAR2(100),
+  parameter            VARCHAR2(100),
+  principle            VARCHAR2(100),
+  fixedassetscode      VARCHAR2(40),
+  materialcode         VARCHAR2(40),
+  sort                 NUMBER,
+  remark               VARCHAR2(200)
+);
 
-ALTER TABLE T_EQUIPCHANGERECORD ADD CONSTRAINT EQUIPCHANGERECORD_ID_PRIMARY PRIMARY KEY (GUID);
+-- Add comments to the table
+comment on table T_EQUIPMENT
+  is '设备台账';
+-- Add comments to the columns
+comment on column T_EQUIPMENT.code
+  is '设备系统编码规则；唯一索引';
+comment on column T_EQUIPMENT.locationcode
+  is '设备位置字典';
+comment on column T_EQUIPMENT.equipcategorycode
+  is '设备分类字典';
+comment on column T_EQUIPMENT.equippurposecode
+  is '作用用途';
+comment on column T_EQUIPMENT.stationcode
+  is '车站字典';
+comment on column T_EQUIPMENT.qrcode
+  is '设备二维码规则';
+comment on column T_EQUIPMENT.sn
+  is '序列号SN号';
+comment on column T_EQUIPMENT.name
+  is '设备名称';
+comment on column T_EQUIPMENT.parentcode
+  is '父级编码';
+comment on column T_EQUIPMENT.allparentcode
+  is '父级路径';
+comment on column T_EQUIPMENT.islastlevel
+  is '是否末级，0|否、1|是 ；（默认1）';
+comment on column T_EQUIPMENT.state
+  is '设备状态，新建、使用、维修、报废等';
+comment on column T_EQUIPMENT.iscore
+  is '是否核心件，0|否、1|是';
+comment on column T_EQUIPMENT.measurementunit
+  is '计量单位';
+comment on column T_EQUIPMENT.price
+  is '设备价格，录入，金额格式';
+comment on column T_EQUIPMENT.ipaddress
+  is 'IP地址';
+comment on column T_EQUIPMENT.upsequipcode
+  is 'UPS设备编码';
+comment on column T_EQUIPMENT.gps
+  is 'GPS定位';
+comment on column T_EQUIPMENT.assetscompanycode
+  is '资产企业编码';
+comment on column T_EQUIPMENT.maintaincompanycode
+  is '运维企业编码';
+comment on column T_EQUIPMENT.operationcompanycode
+  is '运营企业编码';
+comment on column T_EQUIPMENT.keeperid
+  is '保管人ID';
+comment on column T_EQUIPMENT.entrustedcompanycode
+  is '委托单位';
+comment on column T_EQUIPMENT.purchasedate
+  is '购进日期';
+comment on column T_EQUIPMENT.installdate
+  is '安装日期';
+comment on column T_EQUIPMENT.runningdate
+  is '交付日期，录入，YYYYMMdd';
+comment on column T_EQUIPMENT.modelcode
+  is '规格型号编码';
+comment on column T_EQUIPMENT.suppliercode
+  is '供应商编码';
+comment on column T_EQUIPMENT.contactpersonid
+  is '联系人ID';
+comment on column T_EQUIPMENT.uselife
+  is '预计使用年限，数值（月）';
+comment on column T_EQUIPMENT.warrantyterm
+  is '保修期至';
+comment on column T_EQUIPMENT.warrantystate
+  is '保修状态，0|保内，1|保外';
+comment on column T_EQUIPMENT.powerconsumption
+  is '设备功耗';
+comment on column T_EQUIPMENT.certificateno
+  is '技术证书号';
+comment on column T_EQUIPMENT.parameter
+  is '技术参数';
+comment on column T_EQUIPMENT.principle
+  is '工作原理';
+comment on column T_EQUIPMENT.fixedassetscode
+  is '固资编码';
+comment on column T_EQUIPMENT.materialcode
+  is '物资编码';
+comment on column T_EQUIPMENT.sort
+  is '排序码';
+comment on column T_EQUIPMENT.remark
+  is '备注说明';
+-- Create/Recreate indexes
+create unique index INDEX_CODE on T_EQUIPMENT (CODE)
 
- /*----------------------------------------------------------------
-// 功能描述：单位类型表
-// 创建标识：钟剑 2017-03-13
+-- Create/Recreate primary, unique and foreign key constraints
+alter table T_EQUIPMENT
+  add constraint PK_T_EQUIPMENT primary key (GUID)
+
+/*----------------------------------------------------------------
+// 功能描述：设备扩展属性值
+// 创建标识：董立华 2017-03-13
 // 修改标识：
 // 修改描述：
 //----------------------------------------------------------------*/
- -- Create table
- create table S_COMPANYTYPE
+-- Create table
+create table T_EXTATTRIBUTEVALUE
+(
+  equipid          VARCHAR2(32) not null,
+  extattributecode VARCHAR2(30) not null,
+  value            VARCHAR2(40),
+  remark           VARCHAR2(200)
+);
+
+-- Add comments to the table
+comment on table T_EXTATTRIBUTEVALUE
+  is '设备扩展属性值';
+-- Add comments to the columns
+comment on column T_EXTATTRIBUTEVALUE.equipid
+  is '设备ID';
+comment on column T_EXTATTRIBUTEVALUE.extattributecode
+  is '扩展属性编码';
+comment on column T_EXTATTRIBUTEVALUE.value
+  is '扩展属性值';
+comment on column T_EXTATTRIBUTEVALUE.remark
+  is '备注';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table T_EXTATTRIBUTEVALUE
+  add constraint PK_T_EXTATTRIBUTEVALUE primary key (EQUIPID, EXTATTRIBUTECODE)
+
+
+ /*----------------------------------------------------------------
+ // 功能描述：单位类型表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+  create table S_COMPANYTYPE
+  (
+    guid             VARCHAR2(32) default sys_guid() not null,
+    name             VARCHAR2(40),
+    createpersoncode VARCHAR2(32),
+    createtime       DATE default SYSDATE,
+    comments         VARCHAR2(100)
+  );
+
+  comment on table S_COMPANYTYPE is '单位类别';
+  comment on column S_COMPANYTYPE.guid is '编码';
+  comment on column S_COMPANYTYPE.name is '名称';
+  comment on column S_COMPANYTYPE.createpersoncode is '创建人';
+  comment on column S_COMPANYTYPE.createtime is '创建时间';
+  comment on column S_COMPANYTYPE.comments is '备注';
+
+  alter table S_COMPANYTYPE add constraint COMPANYTYPE_GUID_PRIMARY primary key (GUID);
+
+  /*----------------------------------------------------------------
+ // 功能描述：单位表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+ create table S_COMPANY
  (
-   guid             VARCHAR2(32) default sys_guid() not null,
+   guid             VARCHAR2(32) default SYS_GUID() not null,
    name             VARCHAR2(40),
+   simplecode       VARCHAR2(30),
+   parentid         VARCHAR2(32),
    createpersoncode VARCHAR2(32),
    createtime       DATE default SYSDATE,
    comments         VARCHAR2(100)
- )
- tablespace RSEMS
-   pctfree 10
-   initrans 1
-   maxtrans 255;
- -- Add comments to the table
- comment on table S_COMPANYTYPE
-   is '单位类别';
- -- Add comments to the columns
- comment on column S_COMPANYTYPE.guid
-   is '编码';
- comment on column S_COMPANYTYPE.name
-   is '名称';
- comment on column S_COMPANYTYPE.createpersoncode
-   is '创建人';
- comment on column S_COMPANYTYPE.createtime
-   is '创建时间';
- comment on column S_COMPANYTYPE.comments
-   is '备注';
- -- Create/Recreate primary, unique and foreign key constraints
- alter table S_COMPANYTYPE
-   add constraint COMPANYTYPE_GUID_PRIMARY primary key (GUID)
+ );
 
- /*----------------------------------------------------------------
-// 功能描述：单位表
-// 创建标识：钟剑 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
--- Create table
-create table S_COMPANY
-(
-  guid             VARCHAR2(32) default SYS_GUID() not null,
-  name             VARCHAR2(40),
-  simplecode       VARCHAR2(30),
-  parentid         VARCHAR2(32),
-  createpersoncode VARCHAR2(32),
-  createtime       DATE default SYSDATE,
-  comments         VARCHAR2(100)
-)
-tablespace RSEMS
-  pctfree 10
-  initrans 1
-  maxtrans 255;
--- Add comments to the table
-comment on table S_COMPANY
-  is '单位表';
--- Add comments to the columns
-comment on column S_COMPANY.guid
-  is '编码';
-comment on column S_COMPANY.name
-  is '名称';
-comment on column S_COMPANY.simplecode
-  is '简码';
-comment on column S_COMPANY.parentid
-  is '父编码';
-comment on column S_COMPANY.createpersoncode
-  is '创建人编码';
-comment on column S_COMPANY.createtime
-  is '创建时间';
-comment on column S_COMPANY.comments
-  is '备注';
--- Create/Recreate primary, unique and foreign key constraints
-alter table S_COMPANY
-  add constraint COMPANY_GUID_PRIMARY primary key (GUID)
+ comment on table S_COMPANY is '单位表';
+ comment on column S_COMPANY.guid is '编码';
+ comment on column S_COMPANY.name is '名称';
+ comment on column S_COMPANY.simplecode is '简码';
+ comment on column S_COMPANY.parentid is '父编码';
+ comment on column S_COMPANY.createpersoncode is '创建人编码';
+ comment on column S_COMPANY.createtime is '创建时间';
+ comment on column S_COMPANY.comments is '备注';
 
- /*----------------------------------------------------------------
-// 功能描述：组织机构表
-// 创建标识：钟剑 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
--- Create table
-create table S_ORGANIZATION
-(
-  guid             VARCHAR2(32) default SYS_GUID() not null,
-  name             VARCHAR2(40),
-  parentid         VARCHAR2(32),
-  companyid        VARCHAR2(32),
-  createpersoncode VARCHAR2(32),
-  createtime       DATE default SYSDATE,
-  comments         VARCHAR2(100)
-)
-tablespace RSEMS
-  pctfree 10
-  initrans 1
-  maxtrans 255;
--- Add comments to the table
-comment on table S_ORGANIZATION
-  is '组织机构表';
--- Add comments to the columns
-comment on column S_ORGANIZATION.guid
-  is '编码';
-comment on column S_ORGANIZATION.name
-  is '名称';
-comment on column S_ORGANIZATION.parentid
-  is '父编码';
-comment on column S_ORGANIZATION.companyid
-  is '单位编码';
-comment on column S_ORGANIZATION.createpersoncode
-  is '创建人';
-comment on column S_ORGANIZATION.createtime
-  is '创建时间';
-comment on column S_ORGANIZATION.comments
-  is '备注';
--- Create/Recreate primary, unique and foreign key constraints
-alter table S_ORGANIZATION
-  add constraint ORGANIZATION_GUID_PRIMARY primary key (GUID)
+ alter table S_COMPANY add constraint COMPANY_GUID_PRIMARY primary key (GUID);
 
- /*----------------------------------------------------------------
-// 功能描述：岗位表
-// 创建标识：钟剑 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
--- Create table
-create table S_POST
-(
-  guid             VARCHAR2(32) default SYS_GUID() not null,
-  name             VARCHAR2(40),
-  parentid         VARCHAR2(32),
-  createpersoncode VARCHAR2(32),
-  createtime       DATE default SYSDATE,
-  comments         VARCHAR2(100)
-)
-tablespace RSEMS
-  pctfree 10
-  initrans 1
-  maxtrans 255;
--- Add comments to the table
-comment on table S_POST
-  is '岗位表';
--- Add comments to the columns
-comment on column S_POST.guid
-  is '编码';
-comment on column S_POST.name
-  is '名称';
-comment on column S_POST.parentid
-  is '父编码';
-comment on column S_POST.createpersoncode
-  is '创建人';
-comment on column S_POST.createtime
-  is '创建时间';
-comment on column S_POST.comments
-  is '备注';
--- Create/Recreate primary, unique and foreign key constraints
-alter table S_POST
-  add constraint POST_ID_PRIMARY primary key (GUID)
-
- /*----------------------------------------------------------------
-// 功能描述：用户表
-// 创建标识：钟剑 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
+  /*----------------------------------------------------------------
+ // 功能描述：组织机构表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
  -- Create table
- create table S_USERS
+ create table S_ORGANIZATION
  (
    guid             VARCHAR2(32) default SYS_GUID() not null,
-   loginname        VARCHAR2(40),
-   username         VARCHAR2(40),
-   password         VARCHAR2(40),
+   name             VARCHAR2(40),
+   parentid         VARCHAR2(32),
+   companyid        VARCHAR2(32),
+   createpersoncode VARCHAR2(32),
+   createtime       DATE default SYSDATE,
+   comments         VARCHAR2(100)
+ );
+
+ comment on table S_ORGANIZATION is '组织机构表';
+ comment on column S_ORGANIZATION.guid is '编码';
+ comment on column S_ORGANIZATION.name is '名称';
+ comment on column S_ORGANIZATION.parentid is '父编码';
+ comment on column S_ORGANIZATION.companyid is '单位编码';
+ comment on column S_ORGANIZATION.createpersoncode is '创建人';
+ comment on column S_ORGANIZATION.createtime is '创建时间';
+ comment on column S_ORGANIZATION.comments is '备注';
+
+ alter table S_ORGANIZATION add constraint ORGANIZATION_GUID_PRIMARY primary key (GUID);
+
+  /*----------------------------------------------------------------
+ // 功能描述：岗位表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+ create table S_POST
+ (
+   guid             VARCHAR2(32) default SYS_GUID() not null,
+   name             VARCHAR2(40),
+   parentid         VARCHAR2(32),
+   createpersoncode VARCHAR2(32),
+   createtime       DATE default SYSDATE,
+   comments         VARCHAR2(100),
+   companyid        VARCHAR2(32)
+ );
+
+ comment on table S_POST is '岗位表';
+ comment on column S_POST.guid is 'guid';
+ comment on column S_POST.name is '名称';
+ comment on column S_POST.parentid is '父编码';
+ comment on column S_POST.createpersoncode is '创建人';
+ comment on column S_POST.createtime is '创建时间';
+ comment on column S_POST.comments is '备注';
+
+ alter table S_POST add constraint POST_ID_PRIMARY primary key (GUID);
+
+  /*----------------------------------------------------------------
+ // 功能描述：用户表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+  create table S_USERS
+  (
+    guid             VARCHAR2(32) default SYS_GUID() not null,
+    loginname        VARCHAR2(40),
+    username         VARCHAR2(40),
+    password         VARCHAR2(40),
+    state            NUMBER,
+    tel              VARCHAR2(20),
+    createpersoncode VARCHAR2(32),
+    createtime       DATE,
+    comments         VARCHAR2(100),
+    companyid        VARCHAR2(32)
+  );
+
+  comment on table S_USERS is '用户表';
+  comment on column S_USERS.guid is '编码';
+  comment on column S_USERS.loginname is '登录名';
+  comment on column S_USERS.username is '用户名';
+  comment on column S_USERS.password is '用户密码';
+  comment on column S_USERS.state is '状态';
+  comment on column S_USERS.tel is '电话';
+  comment on column S_USERS.createpersoncode is '创建人';
+  comment on column S_USERS.createtime is '创建时间';
+  comment on column S_USERS.comments is '备注';
+
+  alter table S_USERS add constraint USERS_GUID_PRIMARY primary key (GUID);
+
+  /*----------------------------------------------------------------
+ // 功能描述：角色表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+  create table S_ROLE
+  (
+    guid             VARCHAR2(32) default SYS_GUID() not null,
+    name             VARCHAR2(40),
+    createpersoncode VARCHAR2(32),
+    createtime       DATE default SYSDATE,
+    comments         VARCHAR2(100),
+    companyid        VARCHAR2(32)
+  );
+
+  comment on table S_ROLE is '角色表';
+  comment on column S_ROLE.guid is '编码';
+  comment on column S_ROLE.name is '名称';
+  comment on column S_ROLE.createpersoncode is '创建人';
+  comment on column S_ROLE.createtime is '创建时间';
+  comment on column S_ROLE.comments is '备注';
+
+  alter table S_ROLE add constraint ROLE_GUID_PRIMARY primary key (GUID);
+
+  /*----------------------------------------------------------------
+ // 功能描述：权限表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+ create table S_RIGHTS
+ (
+   guid             VARCHAR2(32) default sys_GUID() not null,
+   name             VARCHAR2(40),
+   parentid         VARCHAR2(32),
+   url              VARCHAR2(200),
    state            NUMBER,
-   tel              VARCHAR2(20),
-   createpersoncode VARCHAR2(32),
-   createtime       DATE,
-   comments         VARCHAR2(100)
- )
- tablespace RSEMS
-   pctfree 10
-   initrans 1
-   maxtrans 255;
- -- Add comments to the table
- comment on table S_USERS
-   is '用户表';
- -- Add comments to the columns
- comment on column S_USERS.guid
-   is '编码';
- comment on column S_USERS.loginname
-   is '登录名';
- comment on column S_USERS.username
-   is '用户名';
- comment on column S_USERS.password
-   is '用户密码';
- comment on column S_USERS.state
-   is '状态';
- comment on column S_USERS.tel
-   is '电话';
- comment on column S_USERS.createpersoncode
-   is '创建人';
- comment on column S_USERS.createtime
-   is '创建时间';
- comment on column S_USERS.comments
-   is '备注';
- -- Create/Recreate primary, unique and foreign key constraints
- alter table S_USERS
-   add constraint USERS_GUID_PRIMARY primary key (GUID)
-
- /*----------------------------------------------------------------
-// 功能描述：角色表
-// 创建标识：钟剑 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
- -- Create table
- create table S_ROLE
- (
-   guid             VARCHAR2(32) default SYS_GUID() not null,
-   name             VARCHAR2(40),
    createpersoncode VARCHAR2(32),
    createtime       DATE default SYSDATE,
    comments         VARCHAR2(100)
- )
- tablespace RSEMS
-   pctfree 10
-   initrans 1
-   maxtrans 255;
- -- Add comments to the table
- comment on table S_ROLE
-   is '角色表';
- -- Add comments to the columns
- comment on column S_ROLE.guid
-   is '编码';
- comment on column S_ROLE.name
-   is '名称';
- comment on column S_ROLE.createpersoncode
-   is '创建人';
- comment on column S_ROLE.createtime
-   is '创建时间';
- comment on column S_ROLE.comments
-   is '备注';
- -- Create/Recreate primary, unique and foreign key constraints
- alter table S_ROLE
-   add constraint ROLE_GUID_PRIMARY primary key (GUID)
+ );
 
- /*----------------------------------------------------------------
-// 功能描述：权限表
-// 创建标识：钟剑 2017-03-13
+ comment on table S_RIGHTS is '权限表';
+ comment on column S_RIGHTS.guid is '编码';
+ comment on column S_RIGHTS.name is '名称';
+ comment on column S_RIGHTS.parentid is '父编码';
+ comment on column S_RIGHTS.url is '地址';
+ comment on column S_RIGHTS.state is '状态';
+ comment on column S_RIGHTS.createpersoncode is '创建人';
+ comment on column S_RIGHTS.createtime is '创建时间';
+ comment on column S_RIGHTS.comments is '备注';
+
+ alter table S_RIGHTS add constraint RIGHTS_GUID_PRIMARY primary key (GUID);
+
+  /*----------------------------------------------------------------
+ // 功能描述：单位类型单位表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+ create table S_COMPANYTYPE_COMPANY
+ (
+   guid             VARCHAR2(32) default SYS_GUID() not null,
+   companytypeid    VARCHAR2(32),
+   companyid        VARCHAR2(32),
+   createpersoncode VARCHAR2(32),
+   createtime       DATE default SYSDATE
+ );
+
+ comment on table S_COMPANYTYPE_COMPANY is '单位类别单位表';
+ comment on column S_COMPANYTYPE_COMPANY.guid is '编码';
+ comment on column S_COMPANYTYPE_COMPANY.companytypeid is '单位类别编码';
+ comment on column S_COMPANYTYPE_COMPANY.companyid is '单位编码';
+ comment on column S_COMPANYTYPE_COMPANY.createpersoncode is '创建人';
+ comment on column S_COMPANYTYPE_COMPANY.createtime is '创建时间';
+
+ alter table S_COMPANYTYPE_COMPANY add constraint COMPANYTYPE_COMPANY_ID_PRIMARY primary key (GUID);
+
+  /*----------------------------------------------------------------
+ // 功能描述：组织机构岗位表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+  create table S_ORGANIZATION_POST
+  (
+    guid             VARCHAR2(32) default SYS_GUID() not null,
+    organizationid   VARCHAR2(32),
+    postid           VARCHAR2(32),
+    createpersoncode VARCHAR2(32),
+    crentetime       DATE default SYSDATE
+  );
+
+  comment on table S_ORGANIZATION_POST is '组织机构岗位表';
+  comment on column S_ORGANIZATION_POST.guid is '编码';
+  comment on column S_ORGANIZATION_POST.organizationid is '组织机构编码';
+  comment on column S_ORGANIZATION_POST.postid is '岗位编码';
+  comment on column S_ORGANIZATION_POST.createpersoncode is '创建人';
+  comment on column S_ORGANIZATION_POST.crentetime is '创建时间';
+
+  alter table S_ORGANIZATION_POST add constraint ORGANIZATION_POST_ID_PRIMARY primary key (GUID);
+
+  /*----------------------------------------------------------------
+ // 功能描述：岗位用户表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+  create table S_POST_USERS
+  (
+    guid             VARCHAR2(32) default SYS_GUID() not null,
+    postid           VARCHAR2(32),
+    usersid          VARCHAR2(32),
+    createpersoncode VARCHAR2(32),
+    createtime       DATE default SYSDATE
+  );
+
+  comment on table S_POST_USERS is '岗位用户表';
+  comment on column S_POST_USERS.guid is '编码';
+  comment on column S_POST_USERS.postid is '岗位编码';
+  comment on column S_POST_USERS.usersid is '用户编码';
+  comment on column S_POST_USERS.createpersoncode is '创建人';
+  comment on column S_POST_USERS.createtime is '创建时间';
+
+  alter table S_POST_USERS add constraint POST_USERS_GUID_PRIMARY primary key (GUID);
+
+  /*----------------------------------------------------------------
+ // 功能描述：用户角色表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+  create table S_USERS_ROLE
+  (
+    guid             VARCHAR2(32) default SYS_GUID() not null,
+    usersid          VARCHAR2(32),
+    roleid           VARCHAR2(32),
+    createpersoncode VARCHAR2(32),
+    createtime       DATE default SYSDATE
+  );
+
+  comment on table S_USERS_ROLE is '用户角色表';
+  comment on column S_USERS_ROLE.guid is '编码';
+  comment on column S_USERS_ROLE.usersid is '用户编码';
+  comment on column S_USERS_ROLE.roleid is '角色编码';
+  comment on column S_USERS_ROLE.createpersoncode is '创建人';
+  comment on column S_USERS_ROLE.createtime is '创建时间';
+
+  alter table S_USERS_ROLE add constraint USERS_ROLE_ID_PRIMARY primary key (GUID);
+
+  /*----------------------------------------------------------------
+ // 功能描述：角色权限表
+ // 创建标识：钟剑 2017-03-13
+ // 修改标识：
+ // 修改描述：
+ //----------------------------------------------------------------*/
+  create table S_ROLE_RIGHTS
+  (
+    guid             VARCHAR2(32) not null,
+    roleid           VARCHAR2(32),
+    rightsid         VARCHAR2(32),
+    createpersoncode VARCHAR2(32),
+    createtime       DATE
+  );
+
+  comment on table S_ROLE_RIGHTS is '角色权限表';
+  comment on column S_ROLE_RIGHTS.guid is '编码';
+  comment on column S_ROLE_RIGHTS.roleid is '角色编码';
+  comment on column S_ROLE_RIGHTS.rightsid is '权限编码';
+  comment on column S_ROLE_RIGHTS.createpersoncode is '创建人';
+  comment on column S_ROLE_RIGHTS.createtime is '创建时间';
+
+  alter table S_ROLE_RIGHTS add constraint ROLE_RIGHTS_ID_PRIMARY primary key (GUID);
+
+/*----------------------------------------------------------------
+// 功能描述：巡检类型表
+// 创建标识：葛琼琼 2017-03-20
 // 修改标识：
 // 修改描述：
 //----------------------------------------------------------------*/
 -- Create table
-create table S_RIGHTS
+create table D_INSPECT_TYPE
 (
-  guid             VARCHAR2(32) default sys_GUID() not null,
-  name             VARCHAR2(40),
-  parentid         VARCHAR2(32),
-  url              VARCHAR2(200),
-  state            NUMBER,
-  createpersoncode VARCHAR2(32),
-  createtime       DATE default SYSDATE,
-  comments         VARCHAR2(100)
-)
-tablespace RSEMS
-  pctfree 10
-  initrans 1
-  maxtrans 255;
+  guid       VARCHAR2(32) default sys_guid() not null,
+  name       VARCHAR2(30) not null,
+  description  VARCHAR2(100) not null,
+  type         VARCHAR2(30) not null,
+  status       VARCHAR2(30) ,
+  creator    VARCHAR2(20) not null,
+  createtime DATE default sysdate not null,
+  sort       VARCHAR2(20)
+);
 -- Add comments to the table
-comment on table S_RIGHTS
-  is '权限表';
+comment on table D_INSPECT_TYPE  is '巡检类型表';
 -- Add comments to the columns
-comment on column S_RIGHTS.guid
-  is '编码';
-comment on column S_RIGHTS.name
-  is '名称';
-comment on column S_RIGHTS.parentid
-  is '父编码';
-comment on column S_RIGHTS.url
-  is '地址';
-comment on column S_RIGHTS.state
-  is '状态';
-comment on column S_RIGHTS.createpersoncode
-  is '创建人';
-comment on column S_RIGHTS.createtime
-  is '创建时间';
-comment on column S_RIGHTS.comments
-  is '备注';
+comment on column D_INSPECT_TYPE.guid  is '主键guid';
+comment on column D_INSPECT_TYPE.name  is '类型名称';
+comment on column D_INSPECT_TYPE.description is '类型描述';
+comment on column D_INSPECT_TYPE.type  is '类型标识';
+comment on column D_INSPECT_TYPE.status  is '启停状态(1：启用，0或其他：禁用)';
+comment on column D_INSPECT_TYPE.creator  is '创建人';
+comment on column D_INSPECT_TYPE.createtime  is '创建时间';
+comment on column D_INSPECT_TYPE.sort  is '排序码';
 -- Create/Recreate primary, unique and foreign key constraints
-alter table S_RIGHTS
-  add constraint RIGHTS_GUID_PRIMARY primary key (GUID)
+alter table D_INSPECT_TYPE  add constraint I_INSPECT_TYPE_ID_PRIMARY primary key (GUID);
 
- /*----------------------------------------------------------------
-// 功能描述：单位类型单位表
-// 创建标识：钟剑 2017-03-13
+/*----------------------------------------------------------------
+// 功能描述：巡检频度表
+// 创建标识：葛琼琼 2017-03-20
+// 修改标识：
+// 修改描述：
+//----------------------------------------------------------------*/
+
+-- Create table
+create table D_INSPECT_RATE
+(
+  guid       VARCHAR2(32) default sys_guid() not null,
+  type         VARCHAR2(30) not null,
+  cycle       VARCHAR2(30) not null,
+  param       VARCHAR2(30) not null,
+  creator    VARCHAR2(20) not null,
+  createtime DATE default sysdate not null,
+  sort       VARCHAR2(20)
+);
+-- Add comments to the table
+comment on table D_INSPECT_RATE  is '巡检频度表';
+-- Add comments to the columns
+comment on column D_INSPECT_RATE.guid  is '主键guid';
+comment on column D_INSPECT_RATE.type  is '类型';
+comment on column D_INSPECT_RATE.cycle is '周期';
+comment on column D_INSPECT_RATE.param  is '参数';
+comment on column D_INSPECT_RATE.creator  is '创建人';
+comment on column D_INSPECT_RATE.createtime  is '创建时间';
+comment on column D_INSPECT_RATE.sort  is '排序码';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table D_INSPECT_RATE  add constraint I_INSPECT_RATE_ID_PRIMARY primary key (GUID);
+
+
+/*----------------------------------------------------------------
+// 功能描述：巡检项目表
+// 创建标识：葛琼琼 2017-03-20
+// 修改标识：
+// 修改描述：
+//----------------------------------------------------------------*/
+create table D_INSPECT_ITEM
+(
+  guid                         VARCHAR2(32) default sys_guid() not null,
+  inspecttypeid                VARCHAR2(32) not null,
+  type                         VARCHAR2(30) not null,
+  objectid                     VARCHAR2(30) not null
+  item                         VARCHAR2(30) ,
+  qualitative_quantitative     VARCHAR2(30)  not null,
+  quantitative_measurementunit VARCHAR2(30) ,
+  quantitative_threshold       VARCHAR2(30) ,
+  qualitative_options          VARCHAR2(30),
+  qualitative_description      VARCHAR2(20) ,
+  status                       VARCHAR2(20) ,
+  creator                      VARCHAR2(20) ,
+  createtime                   DATE default sysdate not null,
+  sort                         VARCHAR2(20)
+);
+-- Add comments to the table
+comment on table D_INSPECT_ITEM  is '巡检项目表';
+-- Add comments to the columns
+comment on column D_INSPECT_ITEM.guid  is '主键guid';
+comment on column D_INSPECT_ITEM.inspecttypeid  is '巡检类型guid';
+comment on column D_INSPECT_ITEM.type  is '内容类型:位置/分类';
+comment on column D_INSPECT_ITEM.objectid  is '位置/分类类型：位置或分类的id';
+comment on column D_INSPECT_ITEM.item  is '巡检项';
+comment on column D_INSPECT_ITEM.qualitative_quantitative  is '定性/定量';
+comment on column D_INSPECT_ITEM.quantitative_measurementunit  is '计量单位';
+comment on column D_INSPECT_ITEM.quantitative_threshold  is '阈值:上限值，下限值';
+comment on column D_INSPECT_ITEM.qualitative_options  is '定性选项';
+comment on column D_INSPECT_ITEM.qualitative_description  is '定性描述';
+comment on column D_INSPECT_ITEM.status  is '启停状态';
+comment on column D_INSPECT_ITEM.creator  is '创建人';
+comment on column D_INSPECT_ITEM.createtime  is '创建时间';
+comment on column D_INSPECT_ITEM.sort  is '排序码';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table D_INSPECT_ITEM  add constraint I_INSPECT_ITEM_ID_PRIMARY primary key (GUID);
+
+/*----------------------------------------------------------------
+// 功能描述：巡检任务表
+// 创建标识：葛琼琼 2017-03-20
+// 修改标识：
+// 修改描述：
+//----------------------------------------------------------------*/
+
+-- Create table
+create table T_INSPECT_TASK
+(
+  guid       VARCHAR2(32) default sys_guid() not null,
+  name       VARCHAR2(30) not null,
+  inspecttypeid   VARCHAR2(32) not null,
+  inspectrateid   VARCHAR2(32) not null,
+  starttime       VARCHAR2(32) not null,
+  endtime         VARCHAR2(32) not null,
+  executive_department      VARCHAR2(20) not null,
+  creator      VARCHAR2(20),
+  createtime DATE default sysdate
+);
+-- Add comments to the table
+comment on table T_INSPECT_TASK  is '巡检任务表';
+-- Add comments to the columns
+comment on column T_INSPECT_TASK.guid  is '主键guid';
+comment on column T_INSPECT_TASK.name  is '任务名称';
+comment on column T_INSPECT_TASK.inspecttypeid  is '巡检类型guid';
+comment on column T_INSPECT_TASK.inspectrateid  is '巡检频度guid';
+comment on column T_INSPECT_TASK.starttime  is '开始时间';
+comment on column T_INSPECT_TASK.endtime  is '截止时间';
+comment on column T_INSPECT_TASK.executive_department  is '执行部门';
+comment on column T_INSPECT_TASK.creator  is '创建人';
+comment on column T_INSPECT_TASK.createtime  is '创建时间';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table T_INSPECT_TASK  add constraint I_INSPECT_TASK_ID_PRIMARY primary key (GUID);
+
+/*----------------------------------------------------------------
+// 功能描述：巡检范围表
+// 创建标识：葛琼琼 2017-03-20
+// 修改标识：
+// 修改描述：
+//----------------------------------------------------------------*/
+
+-- Create table
+create table T_INSPECT_RANGE
+(
+  guid       VARCHAR2(32) default sys_guid() not null,
+  inspecttaskid   VARCHAR2(32) not null,
+  positionid   VARCHAR2(32) not null,
+  equipcategoryid   VARCHAR2(32) ,
+  purposeId       VARCHAR2(32)
+ );
+-- Add comments to the table
+comment on table T_INSPECT_RANGE  is '巡检范围表';
+-- Add comments to the columns
+comment on column T_INSPECT_RANGE.guid  is '主键guid';
+comment on column T_INSPECT_RANGE.inspecttaskid  is '巡检任务guid';
+comment on column T_INSPECT_RANGE.positionid     is '位置guid';
+comment on column T_INSPECT_RANGE.equipcategoryid  is '设备分类guid';
+comment on column T_INSPECT_RANGE.purposeId  is '作用用途guid';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table T_INSPECT_RANGE  add constraint I_INSPECT_RANGE_ID_PRIMARY primary key (GUID);
+
+
+/*----------------------------------------------------------------
+// 功能描述：巡检工单表
+// 创建标识：葛琼琼 2017-03-20
 // 修改标识：
 // 修改描述：
 //----------------------------------------------------------------*/
 -- Create table
-create table S_COMPANYTYPE_COMPANY
+create table T_INSPECT_WORKORDER
 (
-  guid             VARCHAR2(32) default SYS_GUID() not null,
-  companytypeid    VARCHAR2(32),
-  companyid        VARCHAR2(32),
-  createpersoncode VARCHAR2(32),
-  createtime       DATE default SYSDATE
-)
-tablespace RSEMS
-  pctfree 10
-  initrans 1
-  maxtrans 255;
+  guid          VARCHAR2(32) default sys_guid() not null,
+  inspecttaskid VARCHAR2(32) not null,
+  workordernumber   VARCHAR2(50) not null,
+  inspectperson VARCHAR2(32) not null,
+  starttime     VARCHAR2(32) not null,
+  endtime       VARCHAR2(32) not null,
+  auditperson   VARCHAR2(30),
+  audittime     DATE default sysdate,
+  createmode    VARCHAR2(30) not null,
+  creator       VARCHAR2(32),
+  createtime    DATE default sysdate,
+  status        VARCHAR2(30) not null
+);
 -- Add comments to the table
-comment on table S_COMPANYTYPE_COMPANY
-  is '单位类别单位表';
+comment on table T_INSPECT_WORKORDER is '巡检工单表';
 -- Add comments to the columns
-comment on column S_COMPANYTYPE_COMPANY.guid
-  is '编码';
-comment on column S_COMPANYTYPE_COMPANY.companytypeid
-  is '单位类别编码';
-comment on column S_COMPANYTYPE_COMPANY.companyid
-  is '单位编码';
-comment on column S_COMPANYTYPE_COMPANY.createpersoncode
-  is '创建人';
-comment on column S_COMPANYTYPE_COMPANY.createtime
-  is '创建时间';
+comment on column T_INSPECT_WORKORDER.guid  is '主键id';
+comment on column T_INSPECT_WORKORDER.inspecttaskid  is '巡检计划id';
+comment on column T_INSPECT_WORKORDER.workordernumber  is '工单编号：自动生成（巡检业务代码[巡检代码+巡检类型代码）';
+comment on column T_INSPECT_WORKORDER.inspectperson  is '巡检人';
+comment on column T_INSPECT_WORKORDER.starttime  is '开始时间';
+comment on column T_INSPECT_WORKORDER.endtime  is '结束时间';
+comment on column T_INSPECT_WORKORDER.auditperson  is '审批人';
+comment on column T_INSPECT_WORKORDER.audittime  is '审批时间';
+comment on column T_INSPECT_WORKORDER.createmode  is '创建方式';
+comment on column T_INSPECT_WORKORDER.creator  is '创建人';
+comment on column T_INSPECT_WORKORDER.createtime  is '创建时间';
+comment on column T_INSPECT_WORKORDER.status  is '工单状态';
 -- Create/Recreate primary, unique and foreign key constraints
-alter table S_COMPANYTYPE_COMPANY
-  add constraint COMPANYTYPE_COMPANY_ID_PRIMARY primary key (GUID)
+alter table T_INSPECT_WORKORDER  add constraint I_INSPECTION_WD_ID_PRIMARY primary key (GUID);
 
- /*----------------------------------------------------------------
-// 功能描述：组织机构岗位表
-// 创建标识：钟剑 2017-03-13
+
+
+/*----------------------------------------------------------------
+// 功能描述：巡检明细表
+// 创建标识：葛琼琼 2017-03-20
 // 修改标识：
 // 修改描述：
 //----------------------------------------------------------------*/
- create table S_ORGANIZATION_POST
- (
-   guid             VARCHAR2(32) default SYS_GUID() not null,
-   organizationid   VARCHAR2(32),
-   postid           VARCHAR2(32),
-   createpersoncode VARCHAR2(32),
-   crentetime       DATE default SYSDATE
- )
- tablespace RSEMS
-   pctfree 10
-   initrans 1
-   maxtrans 255;
- -- Add comments to the table
- comment on table S_ORGANIZATION_POST
-   is '组织机构岗位表';
- -- Add comments to the columns
- comment on column S_ORGANIZATION_POST.guid
-   is '编码';
- comment on column S_ORGANIZATION_POST.organizationid
-   is '组织机构编码';
- comment on column S_ORGANIZATION_POST.postid
-   is '岗位编码';
- comment on column S_ORGANIZATION_POST.createpersoncode
-   is '创建人';
- comment on column S_ORGANIZATION_POST.crentetime
-   is '创建时间';
- -- Create/Recreate primary, unique and foreign key constraints
- alter table S_ORGANIZATION_POST
-   add constraint ORGANIZATION_POST_ID_PRIMARY primary key (GUID)
+-- Create table
+create table T_INSPECT_DETAIL
+(
+  guid          VARCHAR2(32) default sys_guid() not null,
+  workorderid   VARCHAR2(32) not null,
+  inspectobject VARCHAR2(32) not null,
+  item     VARCHAR2(32) not null,
+  result   VARCHAR2(32) not null,
+  gps      VARCHAR2(30),
+  creator  VARCHAR2(32),
+  createtime    DATE default sysdate,
+  inspectobjectid VARCHAR2(32) not null,
+  itemid          VARCHAR2(32) not null
+);
+-- Add comments to the table
+comment on table T_INSPECT_DETAIL is '巡检明细表';
+-- Add comments to the columns
+comment on column T_INSPECT_DETAIL.guid  is '主键id';
+comment on column T_INSPECT_DETAIL.workorderid  is '巡养工单id';
+comment on column T_INSPECT_DETAIL.inspectobject  is '巡养对象';
+comment on column T_INSPECT_DETAIL.item  is '巡养项目';
+comment on column T_INSPECT_DETAIL.result  is '训养结果值';
+comment on column T_INSPECT_DETAIL.gps  is 'GPS信息';
+comment on column T_INSPECT_DETAIL.creator  is '创建人';
+comment on column T_INSPECT_DETAIL.createtime  is '创建时间';
+comment on column T_INSPECT_DETAIL.inspectobjectid  is '巡养对象id';
+comment on column T_INSPECT_DETAIL.itemid  is '巡养项目id';
+-- Create/Recreate primary, unique and foreign key constraints
+alter table T_INSPECT_DETAIL  add constraint I_INSPECTION_DETAIL_ID_PRIMARY primary key (GUID);
 
- /*----------------------------------------------------------------
-// 功能描述：岗位用户表
-// 创建标识：钟剑 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
- -- Create table
- create table S_POST_USERS
- (
-   guid             VARCHAR2(32) default SYS_GUID() not null,
-   postid           VARCHAR2(32),
-   usersid          VARCHAR2(32),
-   createpersoncode VARCHAR2(32),
-   createtime       DATE default SYSDATE
- )
- tablespace RSEMS
-   pctfree 10
-   initrans 1
-   maxtrans 255;
- -- Add comments to the table
- comment on table S_POST_USERS
-   is '岗位用户表';
- -- Add comments to the columns
- comment on column S_POST_USERS.guid
-   is '编码';
- comment on column S_POST_USERS.postid
-   is '岗位编码';
- comment on column S_POST_USERS.usersid
-   is '用户编码';
- comment on column S_POST_USERS.createpersoncode
-   is '创建人';
- comment on column S_POST_USERS.createtime
-   is '创建时间';
- -- Create/Recreate primary, unique and foreign key constraints
- alter table S_POST_USERS
-   add constraint POST_USERS_GUID_PRIMARY primary key (GUID)
 
- /*----------------------------------------------------------------
-// 功能描述：用户角色表
-// 创建标识：钟剑 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
- -- Create table
- create table S_USERS_ROLE
- (
-   guid             VARCHAR2(32) default SYS_GUID() not null,
-   usersid          VARCHAR2(32),
-   roleid           VARCHAR2(32),
-   createpersoncode VARCHAR2(32),
-   createtime       DATE default SYSDATE
- )
- tablespace RSEMS
-   pctfree 10
-   initrans 1
-   maxtrans 255;
- -- Add comments to the table
- comment on table S_USERS_ROLE
-   is '用户角色表';
- -- Add comments to the columns
- comment on column S_USERS_ROLE.guid
-   is '编码';
- comment on column S_USERS_ROLE.usersid
-   is '用户编码';
- comment on column S_USERS_ROLE.roleid
-   is '角色编码';
- comment on column S_USERS_ROLE.createpersoncode
-   is '创建人';
- comment on column S_USERS_ROLE.createtime
-   is '创建时间';
- -- Create/Recreate primary, unique and foreign key constraints
- alter table S_USERS_ROLE
-   add constraint USERS_ROLE_ID_PRIMARY primary key (GUID)
 
- /*----------------------------------------------------------------
-// 功能描述：角色权限表
-// 创建标识：钟剑 2017-03-13
-// 修改标识：
-// 修改描述：
-//----------------------------------------------------------------*/
- -- Create table
- create table S_ROLE_RIGHTS
- (
-   guid             VARCHAR2(32) not null,
-   roleid           VARCHAR2(32),
-   rightsid         VARCHAR2(32),
-   createpersoncode VARCHAR2(32),
-   createtime       DATE
- )
- tablespace RSEMS
-   pctfree 10
-   initrans 1
-   maxtrans 255;
- -- Add comments to the table
- comment on table S_ROLE_RIGHTS
-   is '角色权限表';
- -- Add comments to the columns
- comment on column S_ROLE_RIGHTS.guid
-   is '编码';
- comment on column S_ROLE_RIGHTS.roleid
-   is '角色编码';
- comment on column S_ROLE_RIGHTS.rightsid
-   is '权限编码';
- comment on column S_ROLE_RIGHTS.createpersoncode
-   is '创建人';
- comment on column S_ROLE_RIGHTS.createtime
-   is '创建时间';
- -- Create/Recreate primary, unique and foreign key constraints
- alter table S_ROLE_RIGHTS
-   add constraint ROLE_RIGHTS_ID_PRIMARY primary key (GUID)
+
+
+
+
+
+
+

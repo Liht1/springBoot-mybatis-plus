@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.rails.rsems.mapper.system.IUsersMapper">
+
+	<select id="findUsersRolesByGuid" parameterType="java.lang.String"  resultType="cn.rails.rsems.model.vo.UsersVo">
+
+		SELECT T1.GUID GUID,T1.LOGINNAME LOGINNAME,T1.USERNAME USERNAME,T1.PASSWORD PASSWORD,
+				T1.STATE STATE,T1.TEL TEL,T1.COMMENTS COMMENTS,T1.COMPANYID COMPANYID,T2.ROLEID ROLEID,T3.NAME ROLENAME
+		FROM S_USERS T1 INNER JOIN S_USERS_ROLE T2 ON T1.GUID = T2.USERSID
+		INNER JOIN S_ROLE T3 ON T2.ROLEID= T3.GUID
+		WHERE T1.GUID = #{usersGuid}
+
+	</select>
+</mapper>

@@ -1,5 +1,6 @@
 package cn.rails.rsems.mapper;
 
+
 import com.baomidou.mybatisplus.mapper.BaseMapper;
 import com.baomidou.mybatisplus.mapper.Wrapper;
 import cn.rails.rsems.model.User;
@@ -16,5 +17,6 @@ public interface UserMapper extends BaseMapper<User> {
 
    List<User> selectMyPage(RowBounds rowBounds, @Param("ew") Wrapper<User> wrapper, User user);
    public   List<User> findUserInfo(User user);
+   //public   List<CompanyTypeCompanyDto> findListAll();
 
 }

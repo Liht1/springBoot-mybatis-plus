@@ -13,11 +13,11 @@ import org.springframework.web.bind.annotation.PathVariable;
  * Created by tao on 12/3/17.
  */
 @org.springframework.web.bind.annotation.RestController
-
+@RequestMapping("/user")
 public class RestController extends BaseAction{
     private static final Logger logger = LogManager.getLogger(RestController.class);
 
-    @Autowired
+     @Autowired
     private UserService userService;
 
     @RequestMapping("/test")
@@ -26,13 +26,27 @@ public class RestController extends BaseAction{
       try {
         return buildJsonResult(userService.selectUser(page,size),true,"2014","查询用户成功！");
       }catch (Exception e){
-        logger.info(e.getMessage());
-        return buildJsonResult(null,false,"","查询用户成功！");
+        return buildJsonResult(null,false,"2014","查询用户成功！");
       }
 
 
         //return userService.selectUser(page,size);
     }
+
+
+
+  @RequestMapping("/find")
+  public JsonResult find(Integer page,Integer size) {
+    logger.info("查询初始化--------------------");
+    try {
+      return buildJsonResult(userService.findUserInfo(),true,"2014","查询用户成功！");
+    }catch (Exception e){
+      return buildJsonResult(null,false,"2014","查询用户成功！");
+    }
+
+
+    //return userService.selectUser(page,size);
+  }
 
 
 }

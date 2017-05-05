@@ -20,7 +20,7 @@ public class User extends Model<User> {
 	private Integer id;
 
 	/** 名称 */
-//	@TableField("user_name")
+	@TableField("user_name")
 	private String name;
 	private String pwd;
 
